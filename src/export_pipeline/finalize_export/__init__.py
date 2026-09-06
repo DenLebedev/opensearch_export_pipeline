@@ -1,0 +1,1 @@
+"""Lambda function that finalizes an OpenSearch export."""

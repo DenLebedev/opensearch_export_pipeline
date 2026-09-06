@@ -1,0 +1,1 @@
+"""Lambda function that cleans up an OpenSearch export."""
