@@ -120,3 +120,40 @@ def test_returns_none_when_job_does_not_exist() -> None:
     store = ExportJobStore(table)
 
     assert store.get_job("request-123") is None
+
+def test_marks_job_completed() -> None:
+    table = MagicMock()
+    store = ExportJobStore(table)
+
+    store.mark_completed(
+        request_id="request-123",
+        export_id="export-123",
+        document_count=2_500,
+        file_count=5,
+        manifest_key=(
+            "exports/export-123/manifest.json"
+        ),
+        completed_at=(
+            "2026-09-06T08:10:00+00:00"
+        ),
+    )
+
+    table.update_item.assert_called_once()
+
+    arguments = table.update_item.call_args.kwargs
+
+    assert arguments["Key"] == {
+        "requestId": "request-123",
+    }
+    assert (
+        arguments["ExpressionAttributeValues"][
+            ":completed"
+        ]
+        == "COMPLETED"
+    )
+    assert (
+        arguments["ExpressionAttributeValues"][
+            ":document_count"
+        ]
+        == 2_500
+    )

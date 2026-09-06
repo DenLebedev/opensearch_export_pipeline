@@ -28,6 +28,14 @@ class S3ObjectInfo:
     compressed_size: int
     etag: str | None
 
+@dataclass(frozen=True, slots=True)
+class S3JsonObjectInfo:
+    """Information about a JSON object written to S3."""
+
+    bucket: str
+    key: str
+    size: int
+    etag: str | None
 
 def build_page_key(
     *,
@@ -150,5 +158,51 @@ class ExportS3Client:
             key=key,
             document_count=len(documents),
             compressed_size=len(compressed_content),
+            etag=etag,
+        )
+
+    def write_json(
+        self,
+        *,
+        bucket: str,
+        key: str,
+        value: dict[str, Any],
+        metadata: dict[str, str] | None = None,
+    ) -> S3JsonObjectInfo:
+        """Serialize and write a JSON object to S3."""
+
+        if not bucket:
+            raise ValueError("bucket must not be empty")
+
+        if not key:
+            raise ValueError("key must not be empty")
+
+        content = (
+            json.dumps(
+                value,
+                ensure_ascii=False,
+                indent=2,
+                sort_keys=True,
+            )
+            + "\n"
+        ).encode("utf-8")
+
+        response = self._client.put_object(
+            Bucket=bucket,
+            Key=key,
+            Body=content,
+            ContentType="application/json",
+            Metadata=metadata or {},
+        )
+
+        etag = response.get("ETag")
+
+        if not isinstance(etag, str):
+            etag = None
+
+        return S3JsonObjectInfo(
+            bucket=bucket,
+            key=key,
+            size=len(content),
             etag=etag,
         )

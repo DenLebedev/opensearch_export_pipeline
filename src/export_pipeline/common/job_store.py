@@ -167,3 +167,46 @@ class ExportJobStore:
                 ":export_id": export_id,
             },
         )
+
+    def mark_completed(
+        self,
+        *,
+        request_id: str,
+        export_id: str,
+        document_count: int,
+        file_count: int,
+        manifest_key: str,
+        completed_at: str,
+    ) -> None:
+        """Mark an export as successfully completed."""
+
+        self._table.update_item(
+            Key={
+                "requestId": request_id,
+            },
+            UpdateExpression=(
+                "SET #status = :completed, "
+                "documentCount = :document_count, "
+                "fileCount = :file_count, "
+                "manifestKey = :manifest_key, "
+                "completedAt = :completed_at, "
+                "updatedAt = :completed_at "
+                "REMOVE errorCode, errorMessage"
+            ),
+            ConditionExpression=(
+                "exportId = :export_id "
+                "AND #status IN (:running, :completed)"
+            ),
+            ExpressionAttributeNames={
+                "#status": "status",
+            },
+            ExpressionAttributeValues={
+                ":completed": "COMPLETED",
+                ":running": "RUNNING",
+                ":document_count": document_count,
+                ":file_count": file_count,
+                ":manifest_key": manifest_key,
+                ":completed_at": completed_at,
+                ":export_id": export_id,
+            },
+        )

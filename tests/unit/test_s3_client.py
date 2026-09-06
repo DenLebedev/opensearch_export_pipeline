@@ -138,3 +138,46 @@ def test_write_page_rejects_empty_documents() -> None:
         )
 
     client.put_object.assert_not_called()
+
+def test_write_json_object() -> None:
+    client = MagicMock()
+    client.put_object.return_value = {
+        "ETag": '"manifest-etag"',
+    }
+
+    export_client = ExportS3Client(client)
+
+    value = {
+        "exportId": "export-123",
+        "status": "COMPLETED",
+    }
+
+    result = export_client.write_json(
+        bucket="exports-bucket",
+        key="exports/export-123/manifest.json",
+        value=value,
+        metadata={
+            "export-id": "export-123",
+        },
+    )
+
+    assert result.bucket == "exports-bucket"
+    assert result.key == (
+        "exports/export-123/manifest.json"
+    )
+    assert result.etag == '"manifest-etag"'
+
+    arguments = client.put_object.call_args.kwargs
+
+    assert arguments["ContentType"] == (
+        "application/json"
+    )
+    assert arguments["Metadata"] == {
+        "export-id": "export-123",
+    }
+
+    stored_value = json.loads(
+        arguments["Body"].decode("utf-8")
+    )
+
+    assert stored_value == value
