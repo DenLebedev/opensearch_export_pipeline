@@ -193,20 +193,20 @@ Do not commit `terraform.tfvars` if it contains environment-specific or sensitiv
 
 ### OpenSearch endpoint format
 
-Provide the domain hostname without an index path.
+Provide the complete HTTPS endpoint without an index path or trailing slash.
 
 Example:
 
 ```text
-search-production-example.eu-central-1.es.amazonaws.com
+https://search-production-example.eu-central-1.es.amazonaws.com
 ```
 
-Unless explicitly required by `variables.tf`, do not include:
+The endpoint must:
 
-- `https://`;
-- a trailing slash;
-- an index name;
-- query parameters.
+- start with `https://`;
+- not contain an index name;
+- not contain query parameters;
+- not end with a trailing slash.
 
 ### Network configuration
 

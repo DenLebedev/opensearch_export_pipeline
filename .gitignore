@@ -223,3 +223,9 @@ __marimo__/
 *.tfstate
 *.tfstate.*
 terraform.tfvars
+
+# Terraform plans and crash logs
+tfplan
+*.tfplan
+crash.log
+crash.*.log
