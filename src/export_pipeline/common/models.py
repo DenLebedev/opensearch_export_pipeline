@@ -81,7 +81,7 @@ class ExportRequest:
         *,
         default_page_size: int = 1_000,
         default_slice_count: int = 16,
-    ) -> "ExportRequest":
+    ) -> ExportRequest:
         query = data.get(
             "query",
             {"match_all": {}},
@@ -135,7 +135,7 @@ class SliceState:
     def from_dict(
         cls,
         data: dict[str, Any],
-    ) -> "SliceState":
+    ) -> SliceState:
         slice_id = data.get("sliceId")
 
         if (

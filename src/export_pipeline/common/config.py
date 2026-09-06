@@ -55,7 +55,7 @@ class Settings:
     lambda_safety_margin_ms: int = 30_000
 
     @classmethod
-    def from_env(cls) -> "Settings":
+    def from_env(cls) -> Settings:
         return cls(
             opensearch_endpoint=_required(
                 "OPENSEARCH_ENDPOINT"
