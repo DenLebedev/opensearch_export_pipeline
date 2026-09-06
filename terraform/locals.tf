@@ -80,4 +80,15 @@ locals {
     slice  = local.slice_state_machine_name
     parent = local.parent_state_machine_name
   }
+
+  lambda_pip_platform = (
+    var.lambda_architecture == "arm64"
+    ? "manylinux2014_aarch64"
+    : "manylinux2014_x86_64"
+  )
+
+  lambda_python_version = trimprefix(
+    var.lambda_runtime,
+    "python"
+  )
 }

@@ -7,7 +7,10 @@
       "Resource": "arn:aws:states:::lambda:invoke",
       "Parameters": {
         "FunctionName": "${initialize_export_lambda_arn}",
-        "Payload.$": "$"
+        "Payload": {
+          "request.$": "$",
+          "executionId.$": "$$.Execution.Id"
+        }
       },
       "OutputPath": "$.Payload",
       "TimeoutSeconds": 60,

@@ -19,11 +19,7 @@ def test_build_page_key() -> None:
         page_number=15,
     )
 
-    assert result == (
-        "exports/export-123/data/"
-        "slice=0002/"
-        "part-000015.jsonl.gz"
-    )
+    assert result == ("exports/export-123/data/slice=0002/part-000015.jsonl.gz")
 
 
 def test_build_page_key_rejects_negative_page() -> None:
@@ -99,11 +95,7 @@ def test_write_page_uploads_gzip_object() -> None:
     )
 
     assert result.bucket == "exports-bucket"
-    assert result.key == (
-        "exports/export-123/data/"
-        "slice=0002/"
-        "part-000005.jsonl.gz"
-    )
+    assert result.key == ("exports/export-123/data/slice=0002/part-000005.jsonl.gz")
     assert result.document_count == 1
     assert result.etag == '"etag-123"'
 
@@ -114,9 +106,7 @@ def test_write_page_uploads_gzip_object() -> None:
     assert arguments["ContentEncoding"] == "gzip"
 
     decompressed = gzip.decompress(arguments["Body"])
-    exported_document = json.loads(
-        decompressed.decode("utf-8")
-    )
+    exported_document = json.loads(decompressed.decode("utf-8"))
 
     assert exported_document == documents[0]
 
@@ -138,6 +128,7 @@ def test_write_page_rejects_empty_documents() -> None:
         )
 
     client.put_object.assert_not_called()
+
 
 def test_write_json_object() -> None:
     client = MagicMock()
@@ -162,22 +153,16 @@ def test_write_json_object() -> None:
     )
 
     assert result.bucket == "exports-bucket"
-    assert result.key == (
-        "exports/export-123/manifest.json"
-    )
+    assert result.key == ("exports/export-123/manifest.json")
     assert result.etag == '"manifest-etag"'
 
     arguments = client.put_object.call_args.kwargs
 
-    assert arguments["ContentType"] == (
-        "application/json"
-    )
+    assert arguments["ContentType"] == ("application/json")
     assert arguments["Metadata"] == {
         "export-id": "export-123",
     }
 
-    stored_value = json.loads(
-        arguments["Body"].decode("utf-8")
-    )
+    stored_value = json.loads(arguments["Body"].decode("utf-8"))
 
     assert stored_value == value

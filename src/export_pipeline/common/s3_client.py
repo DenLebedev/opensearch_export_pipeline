@@ -28,6 +28,7 @@ class S3ObjectInfo:
     compressed_size: int
     etag: str | None
 
+
 @dataclass(frozen=True, slots=True)
 class S3JsonObjectInfo:
     """Information about a JSON object written to S3."""
@@ -36,6 +37,7 @@ class S3JsonObjectInfo:
     key: str
     size: int
     etag: str | None
+
 
 def build_page_key(
     *,
@@ -49,20 +51,12 @@ def build_page_key(
         raise ValueError("export_id must not be empty")
 
     if slice_id < 0:
-        raise ValueError(
-            "slice_id must be non-negative"
-        )
+        raise ValueError("slice_id must be non-negative")
 
     if page_number < 0:
-        raise ValueError(
-            "page_number must be non-negative"
-        )
+        raise ValueError("page_number must be non-negative")
 
-    return (
-        f"exports/{export_id}/data/"
-        f"slice={slice_id:04d}/"
-        f"part-{page_number:06d}.jsonl.gz"
-    )
+    return f"exports/{export_id}/data/slice={slice_id:04d}/part-{page_number:06d}.jsonl.gz"
 
 
 def serialize_json_lines(
@@ -121,9 +115,7 @@ class ExportS3Client:
             raise ValueError("bucket must not be empty")
 
         if not documents:
-            raise ValueError(
-                "documents must not be empty"
-            )
+            raise ValueError("documents must not be empty")
 
         key = build_page_key(
             export_id=export_id,

@@ -28,15 +28,13 @@ def test_loads_required_settings_and_defaults(
 
     settings = Settings.from_env()
 
-    assert (
-        settings.opensearch_endpoint
-        == "https://search.example.com"
-    )
+    assert settings.opensearch_endpoint == "https://search.example.com"
     assert settings.export_bucket == "exports-bucket"
     assert settings.export_table == "export-jobs"
     assert settings.aws_region == "eu-west-1"
     assert settings.default_page_size == 1_000
     assert settings.default_slice_count == 16
+    assert settings.job_retention_days == 90
 
 
 def test_rejects_missing_required_setting(

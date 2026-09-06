@@ -8,6 +8,7 @@ locals {
     DEFAULT_SLICE_COUNT      = tostring(var.default_slice_count)
     MAX_PAGES_PER_INVOCATION = tostring(var.max_pages_per_invocation)
     LAMBDA_SAFETY_MARGIN_MS  = tostring(var.lambda_safety_margin_ms)
+    JOB_RETENTION_DAYS       = tostring(var.job_retention_days)
   }
 }
 

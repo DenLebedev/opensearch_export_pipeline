@@ -26,10 +26,7 @@ def create_failure_event() -> dict:
         "outcome": "FAILURE",
         "error": {
             "Error": "TemporaryOpenSearchError",
-            "Cause": (
-                '{"errorMessage":'
-                '"OpenSearch unavailable"}'
-            ),
+            "Cause": ('{"errorMessage":"OpenSearch unavailable"}'),
         },
     }
 
@@ -54,9 +51,7 @@ def test_successful_cleanup_closes_pit() -> None:
         "status": "READY_TO_FINALIZE",
     }
 
-    opensearch_client.close_pit.assert_called_once_with(
-        "pit-123"
-    )
+    opensearch_client.close_pit.assert_called_once_with("pit-123")
     job_store.mark_failed.assert_not_called()
 
 
@@ -70,9 +65,7 @@ def test_failed_cleanup_records_error_and_closes_pit() -> None:
         event=create_failure_event(),
         opensearch_client=opensearch_client,
         job_store=job_store,
-        now_factory=lambda: (
-            "2026-09-06T10:00:00+00:00"
-        ),
+        now_factory=lambda: "2026-09-06T10:00:00+00:00",
     )
 
     assert result["status"] == "FAILED"
@@ -86,9 +79,7 @@ def test_failed_cleanup_records_error_and_closes_pit() -> None:
         updated_at="2026-09-06T10:00:00+00:00",
     )
 
-    opensearch_client.close_pit.assert_called_once_with(
-        "pit-123"
-    )
+    opensearch_client.close_pit.assert_called_once_with("pit-123")
 
 
 def test_missing_error_uses_safe_defaults() -> None:
@@ -104,19 +95,13 @@ def test_missing_error_uses_safe_defaults() -> None:
         event=event,
         opensearch_client=opensearch_client,
         job_store=job_store,
-        now_factory=lambda: (
-            "2026-09-06T10:00:00+00:00"
-        ),
+        now_factory=lambda: "2026-09-06T10:00:00+00:00",
     )
 
-    arguments = (
-        job_store.mark_failed.call_args.kwargs
-    )
+    arguments = job_store.mark_failed.call_args.kwargs
 
     assert arguments["error_code"] == "ExportFailed"
-    assert arguments["error_message"] == (
-        "Export failed without error details"
-    )
+    assert arguments["error_message"] == ("Export failed without error details")
 
 
 def test_invalid_outcome_is_rejected() -> None:
@@ -159,9 +144,7 @@ def test_failure_is_recorded_before_pit_cleanup() -> None:
     opensearch_client = MagicMock()
 
     def close_pit(pit_id: str) -> bool:
-        call_order.append(
-            f"close:{pit_id}"
-        )
+        call_order.append(f"close:{pit_id}")
         return True
 
     opensearch_client.close_pit.side_effect = close_pit
@@ -169,9 +152,7 @@ def test_failure_is_recorded_before_pit_cleanup() -> None:
     job_store = MagicMock()
 
     def mark_failed(**kwargs: object) -> None:
-        call_order.append(
-            f"failed:{kwargs['export_id']}"
-        )
+        call_order.append(f"failed:{kwargs['export_id']}")
 
     job_store.mark_failed.side_effect = mark_failed
 
@@ -179,9 +160,7 @@ def test_failure_is_recorded_before_pit_cleanup() -> None:
         event=create_failure_event(),
         opensearch_client=opensearch_client,
         job_store=job_store,
-        now_factory=lambda: (
-            "2026-09-06T10:00:00+00:00"
-        ),
+        now_factory=lambda: "2026-09-06T10:00:00+00:00",
     )
 
     assert call_order == [

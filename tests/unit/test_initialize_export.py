@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from unittest.mock import MagicMock
 
 import pytest
@@ -6,15 +7,14 @@ from export_pipeline.common.config import Settings
 from export_pipeline.initialize_export.handler import (
     _build_slices,
     _calculate_query_hash,
+    _expiration_timestamp,
     process_initialize_export,
 )
 
 
 def create_settings() -> Settings:
     return Settings(
-        opensearch_endpoint=(
-            "https://search.example.com"
-        ),
+        opensearch_endpoint=("https://search.example.com"),
         export_bucket="exports-bucket",
         export_table="export-jobs",
         aws_region="eu-central-1",
@@ -82,16 +82,12 @@ def test_query_hash_is_stable() -> None:
         }
     }
 
-    assert _calculate_query_hash(
-        first_query
-    ) == _calculate_query_hash(second_query)
+    assert _calculate_query_hash(first_query) == _calculate_query_hash(second_query)
 
 
 def test_initializes_new_export() -> None:
     opensearch_client = MagicMock()
-    opensearch_client.create_pit.return_value = (
-        "pit-123"
-    )
+    opensearch_client.create_pit.return_value = "pit-123"
 
     job_store = MagicMock()
     job_store.try_create_job.return_value = True
@@ -137,9 +133,7 @@ def test_returns_existing_export() -> None:
         "requestId": "request-123",
         "exportId": "existing-export",
         "status": "RUNNING",
-        "outputPrefix": (
-            "exports/existing-export/"
-        ),
+        "outputPrefix": ("exports/existing-export/"),
     }
 
     result = process_initialize_export(
@@ -147,9 +141,7 @@ def test_returns_existing_export() -> None:
         settings=create_settings(),
         opensearch_client=opensearch_client,
         job_store=job_store,
-        now_factory=lambda: (
-            "2026-09-06T08:00:00+00:00"
-        ),
+        now_factory=lambda: "2026-09-06T08:00:00+00:00",
         id_factory=lambda: "unused-export",
     )
 
@@ -158,9 +150,7 @@ def test_returns_existing_export() -> None:
         "requestId": "request-123",
         "exportId": "existing-export",
         "status": "RUNNING",
-        "outputPrefix": (
-            "exports/existing-export/"
-        ),
+        "outputPrefix": ("exports/existing-export/"),
     }
 
     opensearch_client.create_pit.assert_not_called()
@@ -169,9 +159,7 @@ def test_returns_existing_export() -> None:
 
 def test_marks_job_failed_when_pit_creation_fails() -> None:
     opensearch_client = MagicMock()
-    opensearch_client.create_pit.side_effect = (
-        RuntimeError("OpenSearch unavailable")
-    )
+    opensearch_client.create_pit.side_effect = RuntimeError("OpenSearch unavailable")
 
     job_store = MagicMock()
     job_store.try_create_job.return_value = True
@@ -198,35 +186,20 @@ def test_marks_job_failed_when_pit_creation_fails() -> None:
 
     job_store.mark_failed.assert_called_once()
 
-    failure_arguments = (
-        job_store.mark_failed.call_args.kwargs
-    )
+    failure_arguments = job_store.mark_failed.call_args.kwargs
 
-    assert (
-        failure_arguments["request_id"]
-        == "request-123"
-    )
-    assert (
-        failure_arguments["export_id"]
-        == "export-123"
-    )
-    assert (
-        failure_arguments["error_code"]
-        == "RuntimeError"
-    )
+    assert failure_arguments["request_id"] == "request-123"
+    assert failure_arguments["export_id"] == "export-123"
+    assert failure_arguments["error_code"] == "RuntimeError"
 
 
 def test_closes_pit_when_mark_running_fails() -> None:
     opensearch_client = MagicMock()
-    opensearch_client.create_pit.return_value = (
-        "pit-123"
-    )
+    opensearch_client.create_pit.return_value = "pit-123"
 
     job_store = MagicMock()
     job_store.try_create_job.return_value = True
-    job_store.mark_running.side_effect = RuntimeError(
-        "DynamoDB unavailable"
-    )
+    job_store.mark_running.side_effect = RuntimeError("DynamoDB unavailable")
 
     timestamps = iter(
         [
@@ -249,8 +222,61 @@ def test_closes_pit_when_mark_running_fails() -> None:
             id_factory=lambda: "export-123",
         )
 
-    opensearch_client.close_pit.assert_called_once_with(
-        "pit-123"
-    )
+    opensearch_client.close_pit.assert_called_once_with("pit-123")
 
     job_store.mark_failed.assert_called_once()
+
+
+def test_calculates_expiration_timestamp() -> None:
+    result = _expiration_timestamp(
+        "2026-09-06T08:00:00+00:00",
+        90,
+    )
+
+    expected = int(
+        datetime(
+            2026,
+            12,
+            5,
+            8,
+            0,
+            tzinfo=UTC,
+        ).timestamp()
+    )
+
+    assert result == expected
+
+
+def test_same_execution_resumes_running_job() -> None:
+    opensearch_client = MagicMock()
+
+    job_store = MagicMock()
+    job_store.try_create_job.return_value = False
+    job_store.get_job.return_value = {
+        "requestId": "request-123",
+        "exportId": "export-123",
+        "executionId": "execution-123",
+        "status": "RUNNING",
+        "indexName": "customers",
+        "queryHash": _calculate_query_hash(create_event()["query"]),
+        "outputPrefix": "exports/export-123/",
+        "startedAt": ("2026-09-06T08:00:00+00:00"),
+        "pitId": "pit-123",
+    }
+
+    result = process_initialize_export(
+        event=create_event(),
+        execution_id="execution-123",
+        settings=create_settings(),
+        opensearch_client=opensearch_client,
+        job_store=job_store,
+        now_factory=lambda: "2026-09-06T08:01:00+00:00",
+        id_factory=lambda: "unused-export",
+    )
+
+    assert result["alreadyExists"] is False
+    assert result["exportId"] == "export-123"
+    assert result["pitId"] == "pit-123"
+
+    opensearch_client.create_pit.assert_not_called()
+    job_store.mark_running.assert_not_called()

@@ -37,9 +37,7 @@ def create_event() -> dict:
 
 
 def test_builds_manifest_key() -> None:
-    assert _manifest_key(
-        "exports/export-123/"
-    ) == "exports/export-123/manifest.json"
+    assert _manifest_key("exports/export-123/") == "exports/export-123/manifest.json"
 
 
 def test_summarizes_slices() -> None:
@@ -102,9 +100,7 @@ def test_finalizes_export() -> None:
         event=create_event(),
         s3_client=s3_client,
         job_store=job_store,
-        now_factory=lambda: (
-            "2026-09-06T08:10:00+00:00"
-        ),
+        now_factory=lambda: "2026-09-06T08:10:00+00:00",
     )
 
     assert result == {
@@ -113,50 +109,27 @@ def test_finalizes_export() -> None:
         "status": "COMPLETED",
         "documentCount": 2_500,
         "fileCount": 5,
-        "manifestKey": (
-            "exports/export-123/manifest.json"
-        ),
-        "outputLocation": (
-            "s3://exports-bucket/"
-            "exports/export-123/data/"
-        ),
-        "completedAt": (
-            "2026-09-06T08:10:00+00:00"
-        ),
+        "manifestKey": ("exports/export-123/manifest.json"),
+        "outputLocation": ("s3://exports-bucket/exports/export-123/data/"),
+        "completedAt": ("2026-09-06T08:10:00+00:00"),
     }
 
     s3_client.write_json.assert_called_once()
 
-    write_arguments = (
-        s3_client.write_json.call_args.kwargs
-    )
+    write_arguments = s3_client.write_json.call_args.kwargs
 
-    assert write_arguments["bucket"] == (
-        "exports-bucket"
-    )
-    assert write_arguments["key"] == (
-        "exports/export-123/manifest.json"
-    )
-    assert (
-        write_arguments["value"]["documentCount"]
-        == 2_500
-    )
-    assert (
-        write_arguments["value"]["status"]
-        == "COMPLETED"
-    )
+    assert write_arguments["bucket"] == ("exports-bucket")
+    assert write_arguments["key"] == ("exports/export-123/manifest.json")
+    assert write_arguments["value"]["documentCount"] == 2_500
+    assert write_arguments["value"]["status"] == "COMPLETED"
 
     job_store.mark_completed.assert_called_once_with(
         request_id="request-123",
         export_id="export-123",
         document_count=2_500,
         file_count=5,
-        manifest_key=(
-            "exports/export-123/manifest.json"
-        ),
-        completed_at=(
-            "2026-09-06T08:10:00+00:00"
-        ),
+        manifest_key=("exports/export-123/manifest.json"),
+        completed_at=("2026-09-06T08:10:00+00:00"),
     )
 
 

@@ -29,9 +29,7 @@ def test_returns_false_when_job_already_exists() -> None:
     table.put_item.side_effect = ClientError(
         {
             "Error": {
-                "Code": (
-                    "ConditionalCheckFailedException"
-                ),
+                "Code": ("ConditionalCheckFailedException"),
                 "Message": "Condition failed",
             }
         },
@@ -73,19 +71,12 @@ def test_does_not_hide_unexpected_dynamodb_error() -> None:
             index_name="customers",
             query_hash="hash-123",
             output_prefix="exports/export-123/",
-            started_at=(
-                "2026-09-06T08:00:00+00:00"
-            ),
+            started_at=("2026-09-06T08:00:00+00:00"),
         )
     except ClientError as exc:
-        assert (
-            exc.response["Error"]["Code"]
-            == "InternalServerError"
-        )
+        assert exc.response["Error"]["Code"] == "InternalServerError"
     else:
-        raise AssertionError(
-            "ClientError was not raised"
-        )
+        raise AssertionError("ClientError was not raised")
 
 
 def test_gets_existing_job() -> None:
@@ -121,6 +112,7 @@ def test_returns_none_when_job_does_not_exist() -> None:
 
     assert store.get_job("request-123") is None
 
+
 def test_marks_job_completed() -> None:
     table = MagicMock()
     store = ExportJobStore(table)
@@ -130,12 +122,8 @@ def test_marks_job_completed() -> None:
         export_id="export-123",
         document_count=2_500,
         file_count=5,
-        manifest_key=(
-            "exports/export-123/manifest.json"
-        ),
-        completed_at=(
-            "2026-09-06T08:10:00+00:00"
-        ),
+        manifest_key=("exports/export-123/manifest.json"),
+        completed_at=("2026-09-06T08:10:00+00:00"),
     )
 
     table.update_item.assert_called_once()
@@ -145,15 +133,5 @@ def test_marks_job_completed() -> None:
     assert arguments["Key"] == {
         "requestId": "request-123",
     }
-    assert (
-        arguments["ExpressionAttributeValues"][
-            ":completed"
-        ]
-        == "COMPLETED"
-    )
-    assert (
-        arguments["ExpressionAttributeValues"][
-            ":document_count"
-        ]
-        == 2_500
-    )
+    assert arguments["ExpressionAttributeValues"][":completed"] == "COMPLETED"
+    assert arguments["ExpressionAttributeValues"][":document_count"] == 2_500

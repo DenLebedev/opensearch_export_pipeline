@@ -17,9 +17,7 @@ def _required_string(
     value = data.get(field_name)
 
     if not isinstance(value, str) or not value.strip():
-        raise ValidationError(
-            f"{field_name} must be a non-empty string"
-        )
+        raise ValidationError(f"{field_name} must be a non-empty string")
 
     return value.strip()
 
@@ -31,14 +29,8 @@ def _positive_integer(
 ) -> int:
     value = data.get(field_name, default)
 
-    if (
-        isinstance(value, bool)
-        or not isinstance(value, int)
-        or value <= 0
-    ):
-        raise ValidationError(
-            f"{field_name} must be a positive integer"
-        )
+    if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+        raise ValidationError(f"{field_name} must be a positive integer")
 
     return value
 
@@ -50,14 +42,8 @@ def _non_negative_integer(
 ) -> int:
     value = data.get(field_name, default)
 
-    if (
-        isinstance(value, bool)
-        or not isinstance(value, int)
-        or value < 0
-    ):
-        raise ValidationError(
-            f"{field_name} must be a non-negative integer"
-        )
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        raise ValidationError(f"{field_name} must be a non-negative integer")
 
     return value
 
@@ -68,9 +54,7 @@ class ExportRequest:
 
     request_id: str
     index_name: str
-    query: dict[str, Any] = field(
-        default_factory=lambda: {"match_all": {}}
-    )
+    query: dict[str, Any] = field(default_factory=lambda: {"match_all": {}})
     page_size: int = 1_000
     slice_count: int = 16
 
@@ -88,9 +72,7 @@ class ExportRequest:
         )
 
         if not isinstance(query, dict) or not query:
-            raise ValidationError(
-                "query must be a non-empty object"
-            )
+            raise ValidationError("query must be a non-empty object")
 
         return cls(
             request_id=_required_string(
@@ -138,14 +120,8 @@ class SliceState:
     ) -> SliceState:
         slice_id = data.get("sliceId")
 
-        if (
-            isinstance(slice_id, bool)
-            or not isinstance(slice_id, int)
-            or slice_id < 0
-        ):
-            raise ValidationError(
-                "sliceId must be a non-negative integer"
-            )
+        if isinstance(slice_id, bool) or not isinstance(slice_id, int) or slice_id < 0:
+            raise ValidationError("sliceId must be a non-negative integer")
 
         slice_count = _positive_integer(
             data,
@@ -154,9 +130,7 @@ class SliceState:
         )
 
         if slice_id >= slice_count:
-            raise ValidationError(
-                "sliceId must be less than sliceCount"
-            )
+            raise ValidationError("sliceId must be less than sliceCount")
 
         page_number = _non_negative_integer(
             data,
@@ -165,13 +139,8 @@ class SliceState:
 
         search_after = data.get("searchAfter")
 
-        if (
-            search_after is not None
-            and not isinstance(search_after, list)
-        ):
-            raise ValidationError(
-                "searchAfter must be an array or null"
-            )
+        if search_after is not None and not isinstance(search_after, list):
+            raise ValidationError("searchAfter must be an array or null")
 
         query = data.get(
             "query",
@@ -179,9 +148,7 @@ class SliceState:
         )
 
         if not isinstance(query, dict) or not query:
-            raise ValidationError(
-                "query must be a non-empty object"
-            )
+            raise ValidationError("query must be a non-empty object")
 
         return cls(
             export_id=_required_string(

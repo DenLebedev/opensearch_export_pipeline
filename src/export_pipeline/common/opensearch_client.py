@@ -54,9 +54,7 @@ def _validate_index_name(index_name: str) -> str:
         raise ValueError("index_name must not be empty")
 
     if not _INDEX_NAME_PATTERN.fullmatch(index_name):
-        raise ValueError(
-            "index_name contains unsupported characters"
-        )
+        raise ValueError("index_name contains unsupported characters")
 
     return index_name
 
@@ -70,22 +68,16 @@ def create_aws_opensearch_client(
     parsed_endpoint = urlparse(endpoint)
 
     if parsed_endpoint.scheme not in {"http", "https"}:
-        raise ValueError(
-            "OpenSearch endpoint must use http or https"
-        )
+        raise ValueError("OpenSearch endpoint must use http or https")
 
     if not parsed_endpoint.hostname:
-        raise ValueError(
-            "OpenSearch endpoint must contain a hostname"
-        )
+        raise ValueError("OpenSearch endpoint must contain a hostname")
 
     session = boto3.Session()
     credentials = session.get_credentials()
 
     if credentials is None:
-        raise RuntimeError(
-            "AWS credentials are not available"
-        )
+        raise RuntimeError("AWS credentials are not available")
 
     auth = AWSV4SignerAuth(
         credentials,
@@ -132,10 +124,7 @@ class OpenSearchExportClient:
         try:
             response = self._client.transport.perform_request(
                 method="POST",
-                url=(
-                    f"/{validated_index}"
-                    "/_search/point_in_time"
-                ),
+                url=(f"/{validated_index}/_search/point_in_time"),
                 params={
                     "keep_alive": keep_alive,
                 },
@@ -149,10 +138,7 @@ class OpenSearchExportClient:
         pit_id = response.get("pit_id")
 
         if not isinstance(pit_id, str) or not pit_id:
-            raise PermanentOpenSearchError(
-                "OpenSearch create PIT response "
-                "does not contain pit_id"
-            )
+            raise PermanentOpenSearchError("OpenSearch create PIT response does not contain pit_id")
 
         return pit_id
 
@@ -202,21 +188,14 @@ class OpenSearchExportClient:
         hits_container = response.get("hits")
 
         if not isinstance(hits_container, dict):
-            raise PermanentOpenSearchError(
-                "OpenSearch response does not contain hits"
-            )
+            raise PermanentOpenSearchError("OpenSearch response does not contain hits")
 
         hits = hits_container.get("hits")
 
         if not isinstance(hits, list):
-            raise PermanentOpenSearchError(
-                "OpenSearch response hits.hits is not an array"
-            )
+            raise PermanentOpenSearchError("OpenSearch response hits.hits is not an array")
 
-        documents = [
-            self._convert_hit(hit)
-            for hit in hits
-        ]
+        documents = [self._convert_hit(hit) for hit in hits]
 
         next_search_after = self._get_next_search_after(hits)
 
@@ -264,16 +243,12 @@ class OpenSearchExportClient:
         """Convert an OpenSearch hit into an exported record."""
 
         if not isinstance(hit, dict):
-            raise PermanentOpenSearchError(
-                "OpenSearch returned an invalid search hit"
-            )
+            raise PermanentOpenSearchError("OpenSearch returned an invalid search hit")
 
         source = hit.get("_source", {})
 
         if not isinstance(source, dict):
-            raise PermanentOpenSearchError(
-                "OpenSearch hit _source must be an object"
-            )
+            raise PermanentOpenSearchError("OpenSearch hit _source must be an object")
 
         return {
             "_id": hit.get("_id"),
@@ -294,9 +269,7 @@ class OpenSearchExportClient:
         sort_values = final_hit.get("sort")
 
         if not isinstance(sort_values, list):
-            raise PermanentOpenSearchError(
-                "The final OpenSearch hit has no sort values"
-            )
+            raise PermanentOpenSearchError("The final OpenSearch hit has no sort values")
 
         return sort_values
 
@@ -315,9 +288,7 @@ class OpenSearchExportClient:
                 ConnectionTimeout,
             ),
         ):
-            return TemporaryOpenSearchError(
-                f"Temporary failure during {operation}"
-            )
+            return TemporaryOpenSearchError(f"Temporary failure during {operation}")
 
         if isinstance(exception, TransportError):
             status_code = getattr(
@@ -327,24 +298,13 @@ class OpenSearchExportClient:
             )
 
             if status_code == 429:
-                return TemporaryOpenSearchError(
-                    f"OpenSearch throttled {operation}"
-                )
+                return TemporaryOpenSearchError(f"OpenSearch throttled {operation}")
 
-            if (
-                isinstance(status_code, int)
-                and status_code >= 500
-            ):
-                return TemporaryOpenSearchError(
-                    f"OpenSearch server failure "
-                    f"during {operation}"
-                )
+            if isinstance(status_code, int) and status_code >= 500:
+                return TemporaryOpenSearchError(f"OpenSearch server failure during {operation}")
 
             return PermanentOpenSearchError(
-                f"OpenSearch rejected {operation}; "
-                f"status={status_code}"
+                f"OpenSearch rejected {operation}; status={status_code}"
             )
 
-        return PermanentOpenSearchError(
-            f"Unexpected failure during {operation}"
-        )
+        return PermanentOpenSearchError(f"Unexpected failure during {operation}")

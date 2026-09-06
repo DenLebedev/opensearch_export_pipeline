@@ -43,9 +43,7 @@ def _required_string(
     value = event.get(field_name)
 
     if not isinstance(value, str) or not value.strip():
-        raise ValidationError(
-            f"{field_name} must be a non-empty string"
-        )
+        raise ValidationError(f"{field_name} must be a non-empty string")
 
     return value.strip()
 
@@ -90,9 +88,7 @@ def _extract_error(
         parsed_cause = None
 
     if isinstance(parsed_cause, dict):
-        parsed_message = parsed_cause.get(
-            "errorMessage"
-        )
+        parsed_message = parsed_cause.get("errorMessage")
 
         if isinstance(parsed_message, str):
             cause = parsed_message
@@ -112,25 +108,19 @@ def _create_dependencies() -> tuple[
 
     settings = Settings.from_env()
 
-    low_level_opensearch_client = (
-        create_aws_opensearch_client(
-            endpoint=settings.opensearch_endpoint,
-            region=settings.aws_region,
-        )
+    low_level_opensearch_client = create_aws_opensearch_client(
+        endpoint=settings.opensearch_endpoint,
+        region=settings.aws_region,
     )
 
-    opensearch_client = OpenSearchExportClient(
-        low_level_opensearch_client
-    )
+    opensearch_client = OpenSearchExportClient(low_level_opensearch_client)
 
     dynamodb = boto3.resource(
         "dynamodb",
         region_name=settings.aws_region,
     )
 
-    job_store = ExportJobStore(
-        dynamodb.Table(settings.export_table)
-    )
+    job_store = ExportJobStore(dynamodb.Table(settings.export_table))
 
     return (
         opensearch_client,
@@ -165,14 +155,10 @@ def process_cleanup_export(
     ).upper()
 
     if outcome not in _ALLOWED_OUTCOMES:
-        raise ValidationError(
-            "outcome must be SUCCESS or FAILURE"
-        )
+        raise ValidationError("outcome must be SUCCESS or FAILURE")
 
     if outcome == _FAILURE:
-        error_code, error_message = _extract_error(
-            event
-        )
+        error_code, error_message = _extract_error(event)
 
         # Mark the job first. If PIT cleanup fails, the job
         # must still be visible as failed.
@@ -184,9 +170,7 @@ def process_cleanup_export(
             updated_at=now_factory(),
         )
 
-    pit_was_closed = opensearch_client.close_pit(
-        pit_id
-    )
+    pit_was_closed = opensearch_client.close_pit(pit_id)
 
     result = {
         "requestId": request_id,
@@ -213,9 +197,7 @@ def lambda_handler(
 
     del context
 
-    opensearch_client, job_store = (
-        _create_dependencies()
-    )
+    opensearch_client, job_store = _create_dependencies()
 
     LOGGER.info(
         json.dumps(

@@ -36,9 +36,7 @@ def _required_string(
     value = event.get(field_name)
 
     if not isinstance(value, str) or not value.strip():
-        raise ValidationError(
-            f"{field_name} must be a non-empty string"
-        )
+        raise ValidationError(f"{field_name} must be a non-empty string")
 
     return value.strip()
 
@@ -49,14 +47,8 @@ def _required_positive_integer(
 ) -> int:
     value = event.get(field_name)
 
-    if (
-        isinstance(value, bool)
-        or not isinstance(value, int)
-        or value <= 0
-    ):
-        raise ValidationError(
-            f"{field_name} must be a positive integer"
-        )
+    if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+        raise ValidationError(f"{field_name} must be a positive integer")
 
     return value
 
@@ -65,14 +57,8 @@ def _non_negative_integer(
     value: Any,
     field_name: str,
 ) -> int:
-    if (
-        isinstance(value, bool)
-        or not isinstance(value, int)
-        or value < 0
-    ):
-        raise ValidationError(
-            f"{field_name} must be a non-negative integer"
-        )
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        raise ValidationError(f"{field_name} must be a non-negative integer")
 
     return value
 
@@ -85,14 +71,10 @@ def _summarize_slices(
     """Validate slice results and calculate export totals."""
 
     if not isinstance(slice_results, list):
-        raise ValidationError(
-            "sliceResults must be an array"
-        )
+        raise ValidationError("sliceResults must be an array")
 
     if len(slice_results) != expected_slice_count:
-        raise ValidationError(
-            "sliceResults count does not match sliceCount"
-        )
+        raise ValidationError("sliceResults count does not match sliceCount")
 
     observed_slice_ids: set[int] = set()
     document_count = 0
@@ -100,9 +82,7 @@ def _summarize_slices(
 
     for position, result in enumerate(slice_results):
         if not isinstance(result, dict):
-            raise ValidationError(
-                f"sliceResults[{position}] must be an object"
-            )
+            raise ValidationError(f"sliceResults[{position}] must be an object")
 
         slice_id = result.get("sliceId")
 
@@ -112,28 +92,19 @@ def _summarize_slices(
             or slice_id < 0
             or slice_id >= expected_slice_count
         ):
-            raise ValidationError(
-                f"sliceResults[{position}].sliceId is invalid"
-            )
+            raise ValidationError(f"sliceResults[{position}].sliceId is invalid")
 
         if slice_id in observed_slice_ids:
-            raise ValidationError(
-                f"Duplicate sliceId: {slice_id}"
-            )
+            raise ValidationError(f"Duplicate sliceId: {slice_id}")
 
         if result.get("hasMore") is not False:
-            raise ValidationError(
-                f"Slice {slice_id} is not complete"
-            )
+            raise ValidationError(f"Slice {slice_id} is not complete")
 
         observed_slice_ids.add(slice_id)
 
         document_count += _non_negative_integer(
             result.get("totalDocuments"),
-            (
-                f"sliceResults[{position}]"
-                ".totalDocuments"
-            ),
+            (f"sliceResults[{position}].totalDocuments"),
         )
 
         file_count += _non_negative_integer(
@@ -141,14 +112,10 @@ def _summarize_slices(
             f"sliceResults[{position}].totalFiles",
         )
 
-    expected_slice_ids = set(
-        range(expected_slice_count)
-    )
+    expected_slice_ids = set(range(expected_slice_count))
 
     if observed_slice_ids != expected_slice_ids:
-        raise ValidationError(
-            "sliceResults do not contain every expected slice"
-        )
+        raise ValidationError("sliceResults do not contain every expected slice")
 
     return document_count, file_count
 
@@ -180,9 +147,7 @@ def _create_dependencies() -> tuple[
         region_name=settings.aws_region,
     )
 
-    job_store = ExportJobStore(
-        dynamodb.Table(settings.export_table)
-    )
+    job_store = ExportJobStore(dynamodb.Table(settings.export_table))
 
     return (
         s3_client,
@@ -231,15 +196,11 @@ def process_finalize_export(
     expected_output_prefix = f"exports/{export_id}/"
 
     if output_prefix != expected_output_prefix:
-        raise ValidationError(
-            "outputPrefix does not match exportId"
-        )
+        raise ValidationError("outputPrefix does not match exportId")
 
-    document_count, file_count = (
-        _summarize_slices(
-            slice_results=event.get("sliceResults"),
-            expected_slice_count=slice_count,
-        )
+    document_count, file_count = _summarize_slices(
+        slice_results=event.get("sliceResults"),
+        expected_slice_count=slice_count,
     )
 
     completed_at = now_factory()
@@ -298,9 +259,7 @@ def process_finalize_export(
         "documentCount": document_count,
         "fileCount": file_count,
         "manifestKey": manifest_key,
-        "outputLocation": (
-            f"s3://{bucket}/{output_prefix}data/"
-        ),
+        "outputLocation": (f"s3://{bucket}/{output_prefix}data/"),
         "completedAt": completed_at,
     }
 

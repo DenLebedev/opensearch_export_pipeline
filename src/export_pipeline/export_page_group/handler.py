@@ -46,16 +46,12 @@ def _create_dependencies() -> tuple[
 
     settings = Settings.from_env()
 
-    low_level_opensearch_client = (
-        create_aws_opensearch_client(
-            endpoint=settings.opensearch_endpoint,
-            region=settings.aws_region,
-        )
+    low_level_opensearch_client = create_aws_opensearch_client(
+        endpoint=settings.opensearch_endpoint,
+        region=settings.aws_region,
     )
 
-    opensearch_client = OpenSearchExportClient(
-        low_level_opensearch_client
-    )
+    opensearch_client = OpenSearchExportClient(low_level_opensearch_client)
 
     s3_client = ExportS3Client(
         boto3.client(
@@ -77,9 +73,7 @@ def _has_enough_execution_time(
 ) -> bool:
     """Check whether Lambda can safely start another page."""
 
-    remaining_time = (
-        context.get_remaining_time_in_millis()
-    )
+    remaining_time = context.get_remaining_time_in_millis()
 
     return remaining_time > safety_margin_ms
 
@@ -100,17 +94,14 @@ def process_page_group(
     invocation_files = 0
     has_more = True
 
-    for _ in range(
-        settings.max_pages_per_invocation
-    ):
+    for _ in range(settings.max_pages_per_invocation):
         if not _has_enough_execution_time(
             context,
             settings.lambda_safety_margin_ms,
         ):
             if invocation_files == 0:
                 raise InsufficientExecutionTimeError(
-                    "Lambda does not have enough remaining "
-                    "time to process a page"
+                    "Lambda does not have enough remaining time to process a page"
                 )
 
             LOGGER.info(
@@ -164,10 +155,7 @@ def process_page_group(
             state,
             page_number=state.page_number + 1,
             search_after=page.next_search_after,
-            total_documents=(
-                state.total_documents
-                + document_count
-            ),
+            total_documents=(state.total_documents + document_count),
             total_files=state.total_files + 1,
         )
 
@@ -182,9 +170,7 @@ def process_page_group(
                     "pageNumber": state.page_number - 1,
                     "documentCount": document_count,
                     "s3Key": object_info.key,
-                    "compressedSize": (
-                        object_info.compressed_size
-                    ),
+                    "compressedSize": (object_info.compressed_size),
                 }
             )
         )
@@ -208,9 +194,7 @@ def lambda_handler(
 ) -> dict[str, Any]:
     """AWS Lambda entry point."""
 
-    settings, opensearch_client, s3_client = (
-        _create_dependencies()
-    )
+    settings, opensearch_client, s3_client = _create_dependencies()
 
     LOGGER.info(
         json.dumps(
@@ -237,9 +221,7 @@ def lambda_handler(
                 "event": "page_group_completed",
                 "exportId": result["exportId"],
                 "sliceId": result["sliceId"],
-                "documentsProcessed": (
-                    result["documentsProcessed"]
-                ),
+                "documentsProcessed": (result["documentsProcessed"]),
                 "filesWritten": result["filesWritten"],
                 "hasMore": result["hasMore"],
             }

@@ -44,12 +44,15 @@ class ExportJobStore:
         query_hash: str,
         output_prefix: str,
         started_at: str,
+        execution_id: str = "direct-execution",
+        expires_at: int | None = None,
     ) -> bool:
         """Create a job unless the request ID already exists."""
 
         item = {
             "requestId": request_id,
             "exportId": export_id,
+            "executionId": execution_id,
             "status": "STARTING",
             "indexName": index_name,
             "queryHash": query_hash,
@@ -58,19 +61,16 @@ class ExportJobStore:
             "updatedAt": started_at,
         }
 
+        if expires_at is not None:
+            item["expiresAt"] = expires_at
+
         try:
             self._table.put_item(
                 Item=item,
-                ConditionExpression=(
-                    "attribute_not_exists(requestId)"
-                ),
+                ConditionExpression=("attribute_not_exists(requestId)"),
             )
         except ClientError as exc:
-            error_code = (
-                exc.response
-                .get("Error", {})
-                .get("Code")
-            )
+            error_code = exc.response.get("Error", {}).get("Code")
 
             if error_code == "ConditionalCheckFailedException":
                 return False
@@ -117,10 +117,9 @@ class ExportJobStore:
                 "SET #status = :status, "
                 "pitId = :pit_id, "
                 "updatedAt = :updated_at"
+                "REMOVE errorCode, errorMessage"
             ),
-            ConditionExpression=(
-                "exportId = :export_id"
-            ),
+            ConditionExpression=("exportId = :export_id"),
             ExpressionAttributeNames={
                 "#status": "status",
             },
@@ -153,9 +152,7 @@ class ExportJobStore:
                 "errorMessage = :error_message, "
                 "updatedAt = :updated_at"
             ),
-            ConditionExpression=(
-                "exportId = :export_id"
-            ),
+            ConditionExpression=("exportId = :export_id"),
             ExpressionAttributeNames={
                 "#status": "status",
             },
@@ -193,10 +190,7 @@ class ExportJobStore:
                 "updatedAt = :completed_at "
                 "REMOVE errorCode, errorMessage"
             ),
-            ConditionExpression=(
-                "exportId = :export_id "
-                "AND #status IN (:running, :completed)"
-            ),
+            ConditionExpression=("exportId = :export_id AND #status IN (:running, :completed)"),
             ExpressionAttributeNames={
                 "#status": "status",
             },

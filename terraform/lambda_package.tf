@@ -12,7 +12,11 @@ resource "terraform_data" "lambda_build" {
         "--requirements",
         "\"${local.lambda_requirements_file}\"",
         "--output",
-        "\"${local.lambda_build_directory}\""
+        "\"${local.lambda_build_directory}\"",
+        "--platform",
+        local.lambda_pip_platform,
+        "--python-version",
+        local.lambda_python_version
       ]
     )
   }

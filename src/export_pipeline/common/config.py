@@ -14,9 +14,7 @@ def _required(name: str) -> str:
     value = os.getenv(name, "").strip()
 
     if not value:
-        raise ConfigurationError(
-            f"Environment variable {name} is required"
-        )
+        raise ConfigurationError(f"Environment variable {name} is required")
 
     return value
 
@@ -27,14 +25,10 @@ def _positive_int(name: str, default: int) -> int:
     try:
         value = int(raw_value)
     except ValueError as exc:
-        raise ConfigurationError(
-            f"Environment variable {name} must be an integer"
-        ) from exc
+        raise ConfigurationError(f"Environment variable {name} must be an integer") from exc
 
     if value <= 0:
-        raise ConfigurationError(
-            f"Environment variable {name} must be greater than zero"
-        )
+        raise ConfigurationError(f"Environment variable {name} must be greater than zero")
 
     return value
 
@@ -53,13 +47,12 @@ class Settings:
     default_slice_count: int = 16
     max_pages_per_invocation: int = 5
     lambda_safety_margin_ms: int = 30_000
+    job_retention_days: int = 90
 
     @classmethod
     def from_env(cls) -> Settings:
         return cls(
-            opensearch_endpoint=_required(
-                "OPENSEARCH_ENDPOINT"
-            ).rstrip("/"),
+            opensearch_endpoint=_required("OPENSEARCH_ENDPOINT").rstrip("/"),
             export_bucket=_required("EXPORT_BUCKET"),
             export_table=_required("EXPORT_TABLE"),
             aws_region=os.getenv(
@@ -85,5 +78,9 @@ class Settings:
             lambda_safety_margin_ms=_positive_int(
                 "LAMBDA_SAFETY_MARGIN_MS",
                 30_000,
+            ),
+            job_retention_days=_positive_int(
+                "JOB_RETENTION_DAYS",
+                90,
             ),
         )

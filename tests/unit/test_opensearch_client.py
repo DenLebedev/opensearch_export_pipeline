@@ -18,9 +18,7 @@ def create_mock_client() -> MagicMock:
 
 def test_create_pit_returns_pit_id() -> None:
     client = create_mock_client()
-    client.transport.perform_request.return_value = {
-        "pit_id": "pit-123"
-    }
+    client.transport.perform_request.return_value = {"pit_id": "pit-123"}
 
     export_client = OpenSearchExportClient(client)
 
@@ -174,11 +172,7 @@ def test_search_next_page_uses_search_after() -> None:
 
 def test_search_empty_page() -> None:
     client = create_mock_client()
-    client.search.return_value = {
-        "hits": {
-            "hits": []
-        }
-    }
+    client.search.return_value = {"hits": {"hits": []}}
 
     export_client = OpenSearchExportClient(client)
 

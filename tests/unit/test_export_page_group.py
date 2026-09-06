@@ -19,9 +19,7 @@ def create_settings(
     safety_margin_ms: int = 30_000,
 ) -> Settings:
     return Settings(
-        opensearch_endpoint=(
-            "https://search.example.com"
-        ),
+        opensearch_endpoint=("https://search.example.com"),
         export_bucket="exports-bucket",
         export_table="export-jobs",
         aws_region="eu-central-1",
@@ -43,9 +41,7 @@ def create_event() -> dict:
         "searchAfter": None,
         "pageSize": 2,
         "bucket": "exports-bucket",
-        "query": {
-            "match_all": {}
-        },
+        "query": {"match_all": {}},
         "totalDocuments": 0,
         "totalFiles": 0,
     }
@@ -57,11 +53,7 @@ def create_s3_result(
 ) -> S3ObjectInfo:
     return S3ObjectInfo(
         bucket="exports-bucket",
-        key=(
-            "exports/export-123/data/"
-            "slice=0002/"
-            f"part-{page_number:06d}.jsonl.gz"
-        ),
+        key=(f"exports/export-123/data/slice=0002/part-{page_number:06d}.jsonl.gz"),
         document_count=document_count,
         compressed_size=100,
         etag='"etag-123"',
@@ -70,9 +62,7 @@ def create_s3_result(
 
 def test_processes_multiple_pages() -> None:
     context = MagicMock()
-    context.get_remaining_time_in_millis.return_value = (
-        120_000
-    )
+    context.get_remaining_time_in_millis.return_value = 120_000
 
     opensearch_client = MagicMock()
     opensearch_client.search_page.side_effect = [
@@ -122,9 +112,7 @@ def test_processes_multiple_pages() -> None:
 
 def test_stops_after_final_partial_page() -> None:
     context = MagicMock()
-    context.get_remaining_time_in_millis.return_value = (
-        120_000
-    )
+    context.get_remaining_time_in_millis.return_value = 120_000
 
     opensearch_client = MagicMock()
     opensearch_client.search_page.return_value = SearchPage(
@@ -136,9 +124,7 @@ def test_stops_after_final_partial_page() -> None:
     )
 
     s3_client = MagicMock()
-    s3_client.write_page.return_value = (
-        create_s3_result(0, 1)
-    )
+    s3_client.write_page.return_value = create_s3_result(0, 1)
 
     result = process_page_group(
         event=create_event(),
@@ -160,9 +146,7 @@ def test_stops_after_final_partial_page() -> None:
 
 def test_stops_on_empty_page_without_writing_s3() -> None:
     context = MagicMock()
-    context.get_remaining_time_in_millis.return_value = (
-        120_000
-    )
+    context.get_remaining_time_in_millis.return_value = 120_000
 
     opensearch_client = MagicMock()
     opensearch_client.search_page.return_value = SearchPage(
@@ -210,9 +194,7 @@ def test_stops_before_timeout_after_completed_page() -> None:
     )
 
     s3_client = MagicMock()
-    s3_client.write_page.return_value = (
-        create_s3_result(0, 2)
-    )
+    s3_client.write_page.return_value = create_s3_result(0, 2)
 
     result = process_page_group(
         event=create_event(),
@@ -235,9 +217,7 @@ def test_stops_before_timeout_after_completed_page() -> None:
 
 def test_fails_if_no_page_can_be_started() -> None:
     context = MagicMock()
-    context.get_remaining_time_in_millis.return_value = (
-        20_000
-    )
+    context.get_remaining_time_in_millis.return_value = 20_000
 
     opensearch_client = MagicMock()
     s3_client = MagicMock()
@@ -272,9 +252,7 @@ def test_continues_from_existing_checkpoint() -> None:
     )
 
     context = MagicMock()
-    context.get_remaining_time_in_millis.return_value = (
-        120_000
-    )
+    context.get_remaining_time_in_millis.return_value = 120_000
 
     opensearch_client = MagicMock()
     opensearch_client.search_page.return_value = SearchPage(
@@ -286,9 +264,7 @@ def test_continues_from_existing_checkpoint() -> None:
     )
 
     s3_client = MagicMock()
-    s3_client.write_page.return_value = (
-        create_s3_result(10, 1)
-    )
+    s3_client.write_page.return_value = create_s3_result(10, 1)
 
     result = process_page_group(
         event=event,
@@ -302,20 +278,10 @@ def test_continues_from_existing_checkpoint() -> None:
     assert result["totalDocuments"] == 21
     assert result["totalFiles"] == 11
 
-    search_arguments = (
-        opensearch_client
-        .search_page
-        .call_args
-        .kwargs
-    )
+    search_arguments = opensearch_client.search_page.call_args.kwargs
 
     assert search_arguments["search_after"] == [100]
 
-    write_arguments = (
-        s3_client
-        .write_page
-        .call_args
-        .kwargs
-    )
+    write_arguments = s3_client.write_page.call_args.kwargs
 
     assert write_arguments["page_number"] == 10
