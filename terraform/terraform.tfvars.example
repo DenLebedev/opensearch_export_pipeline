@@ -1,0 +1,44 @@
+aws_region  = "eu-central-1"
+project_name = "opensearch-export"
+environment  = "dev"
+
+# Leave null to let Terraform generate a globally unique name.
+export_bucket_name = null
+
+enable_bucket_versioning             = false
+export_retention_days                = 30
+noncurrent_version_retention_days    = 7
+
+# Leave null to use:
+# opensearch-export-dev-jobs
+export_table_name = null
+
+enable_dynamodb_point_in_time_recovery = true
+job_retention_days                     = 90
+
+additional_tags = {
+  Owner      = "DataPlatform"
+  CostCenter = "Engineering"
+}
+
+opensearch_endpoint = "https://search-example.eu-central-1.es.amazonaws.com"
+
+opensearch_domain_arn = "arn:aws:es:eu-central-1:123456789012:domain/example"
+
+python_command      = "py -3.13"
+lambda_runtime      = "python3.13"
+lambda_architecture = "arm64"
+
+worker_memory_size         = 1024
+worker_timeout_seconds     = 900
+worker_reserved_concurrency = 4
+
+auxiliary_lambda_memory_size      = 256
+auxiliary_lambda_timeout_seconds  = 60
+
+pit_keep_alive                  = "10m"
+default_page_size               = 1000
+default_slice_count             = 16
+max_pages_per_invocation        = 5
+lambda_safety_margin_ms         = 30000
+log_retention_days              = 30
