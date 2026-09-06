@@ -1,0 +1,54 @@
+{
+  "Comment": "Export one OpenSearch slice to S3",
+  "StartAt": "ExportPageGroup",
+  "States": {
+    "ExportPageGroup": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${export_page_group_lambda_arn}",
+        "Payload.$": "$"
+      },
+      "OutputPath": "$.Payload",
+      "TimeoutSeconds": 900,
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 2,
+          "BackoffRate": 2,
+          "MaxAttempts": 6,
+          "JitterStrategy": "FULL"
+        },
+        {
+          "ErrorEquals": [
+            "TemporaryOpenSearchError"
+          ],
+          "IntervalSeconds": 5,
+          "BackoffRate": 2,
+          "MaxAttempts": 5,
+          "JitterStrategy": "FULL"
+        }
+      ],
+      "Next": "HasMorePages"
+    },
+    "HasMorePages": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.hasMore",
+          "BooleanEquals": true,
+          "Next": "ExportPageGroup"
+        }
+      ],
+      "Default": "SliceCompleted"
+    },
+    "SliceCompleted": {
+      "Type": "Succeed"
+    }
+  }
+}
