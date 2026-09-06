@@ -262,7 +262,7 @@ Do not assume that every slice processes the same number of documents. OpenSearc
 Get the table name from Terraform:
 
 ```powershell
-$JOBS_TABLE = terraform output -raw jobs_table_name
+$JOBS_TABLE = terraform output -raw export_jobs_table_name
 ```
 
 Create a temporary file named `job-key.json`:
